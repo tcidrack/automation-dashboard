@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState, useCallback } from "react";
 import * as XLSX from "xlsx";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { supabase } from "../lib/supabase";
+import { usePollingFetch } from "../hooks/usePollingFetch";
 
 function formatarDataHora(iso) {
   if (!iso) return "—";
@@ -21,26 +22,22 @@ function getDataOnly(iso) {
 }
 
 export default function Regulacoes({ tema, cores }) {
-  const [dados, setDados] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [busca, setBusca] = useState("");
   const [dataInicio, setDataInicio] = useState("");
   const [dataFim, setDataFim] = useState("");
 
   const accentColor = tema === "escuro" ? "#FFCB05" : "#FF0073";
 
-  useEffect(() => {
-    async function carregar() {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("regulacoes")
-        .select("*")
-        .order("data_execucao", { ascending: false });
-      if (!error) setDados(data || []);
-      setLoading(false);
-    }
-    carregar();
+  const fetchRegulacoes = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("regulacoes")
+      .select("*")
+      .order("data_execucao", { ascending: false });
+    if (!error) return data || [];
+    return [];
   }, []);
+
+  const { data: dados, loading } = usePollingFetch(fetchRegulacoes, 30000);
 
   function filtrarPorPeriodo(lista) {
     return lista.filter((r) => {

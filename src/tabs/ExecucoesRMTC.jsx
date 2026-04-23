@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState, useCallback } from "react";
 import * as XLSX from "xlsx";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { supabase } from "../lib/supabase";
+import { usePollingFetch } from "../hooks/usePollingFetch";
 
 function formatarDataHora(iso) {
   if (!iso) return "—";
@@ -21,8 +22,6 @@ function getDataOnly(iso) {
 }
 
 export default function ExecucoesRMTC({ tema, cores }) {
-  const [dados, setDados] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [busca, setBusca] = useState("");
   const [filtroTipo, setFiltroTipo] = useState("Todos");
   const [dataInicio, setDataInicio] = useState("");
@@ -32,18 +31,16 @@ export default function ExecucoesRMTC({ tema, cores }) {
   const COLOR_RM = tema === "escuro" ? "#60a5fa" : "#1d4ed8";
   const COLOR_TC = tema === "escuro" ? "#f87171" : "#dc2626";
 
-  useEffect(() => {
-    async function carregar() {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("execucoes_rmtc")
-        .select("*")
-        .order("data_execucao", { ascending: false });
-      if (!error) setDados(data || []);
-      setLoading(false);
-    }
-    carregar();
+  const fetchExecucoes = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("execucoes_rmtc")
+      .select("*")
+      .order("data_execucao", { ascending: false });
+    if (!error) return data || [];
+    return [];
   }, []);
+
+  const { data: dados, loading } = usePollingFetch(fetchExecucoes, 30000);
 
   function filtrarPorPeriodo(lista) {
     return lista.filter((r) => {

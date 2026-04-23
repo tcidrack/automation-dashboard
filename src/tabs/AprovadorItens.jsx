@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState, useCallback } from "react";
 import * as XLSX from "xlsx";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { supabase } from "../lib/supabase";
+import { usePollingFetch } from "../hooks/usePollingFetch";
 
 function formatarDataHora(iso) {
   if (!iso) return "—";
@@ -21,8 +22,6 @@ function getDataOnly(iso) {
 }
 
 export default function AprovadorItens({ tema, cores }) {
-  const [dados, setDados] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [busca, setBusca] = useState("");
   const [filtroPrestador, setFiltroPrestador] = useState("Todos");
   const [dataInicio, setDataInicio] = useState("");
@@ -32,18 +31,16 @@ export default function AprovadorItens({ tema, cores }) {
   const COLOR_APROV = tema === "escuro" ? "#34d399" : "#059669";
   const COLOR_GLOS = tema === "escuro" ? "#f87171" : "#dc2626";
 
-  useEffect(() => {
-    async function carregar() {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("aprovador_itens")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (!error) setDados(data || []);
-      setLoading(false);
-    }
-    carregar();
+  const fetchAprovador = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("aprovador_itens")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (!error) return data || [];
+    return [];
   }, []);
+
+  const { data: dados, loading } = usePollingFetch(fetchAprovador, 30000);
 
   function filtrarPorPeriodo(lista) {
     return lista.filter((r) => {
