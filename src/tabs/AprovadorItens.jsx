@@ -22,8 +22,8 @@ function getDataOnly(iso) {
 }
 
 export default function AprovadorItens({ tema, cores }) {
-  const [busca, setBusca] = useState("");
-  const [filtroPrestador, setFiltroPrestador] = useState("Todos");
+const [buscaLote, setBuscaLote] = useState("");
+  const [buscaPrestador, setBuscaPrestador] = useState("");
   const [dataInicio, setDataInicio] = useState("");
   const [dataFim, setDataFim] = useState("");
 
@@ -58,14 +58,17 @@ export default function AprovadorItens({ tema, cores }) {
     });
   }
 
-  const prestadoresUnicos = ["Todos", ...new Set(dados.map((r) => r.prestador).filter(Boolean))];
+  const prestadoresUnicos = [...new Set(dados.map((r) => r.prestador).filter(Boolean))];
 
   let filtrados = filtrarPorPeriodo(dados);
-  if (filtroPrestador !== "Todos") filtrados = filtrados.filter((r) => r.prestador === filtroPrestador);
-  if (busca.trim()) {
+  if (buscaPrestador.trim()) {
     filtrados = filtrados.filter((r) =>
-      (r.numero_lote || "").toLowerCase().includes(busca.trim().toLowerCase()) ||
-      (r.prestador || "").toLowerCase().includes(busca.trim().toLowerCase())
+      (r.prestador || "").toLowerCase().includes(buscaPrestador.trim().toLowerCase())
+    );
+  }
+  if (buscaLote.trim()) {
+    filtrados = filtrados.filter((r) =>
+      (r.numero_lote || "").toLowerCase().includes(buscaLote.trim().toLowerCase())
     );
   }
 
@@ -149,17 +152,23 @@ export default function AprovadorItens({ tema, cores }) {
       {/* FILTROS */}
       <div className="filtro">
         <div className="linha-filtros">
-          <label>Busca:</label>
+          <label>Lote:</label>
           <input
             className="filtro-processo"
             type="text"
-            placeholder="Prestador ou nº do lote"
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Buscar lote"
+            value={buscaLote}
+            onChange={(e) => setBuscaLote(e.target.value)}
           />
           <label>Prestador:</label>
-          <select value={filtroPrestador} onChange={(e) => setFiltroPrestador(e.target.value)}>
-            {prestadoresUnicos.map((p) => <option key={p}>{p}</option>)}
+          <select
+            value={buscaPrestador}
+            onChange={(e) => setBuscaPrestador(e.target.value)}
+          >
+            <option value="">Todos</option>
+            {prestadoresUnicos.map((p) => (
+              <option key={p} value={p}>{p}</option>
+            ))}
           </select>
           <label>Período:</label>
           <input className="filtro-data" type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} />
@@ -167,7 +176,7 @@ export default function AprovadorItens({ tema, cores }) {
           <input className="filtro-data" type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} />
           <button
             className="btn-tema"
-            onClick={() => { setBusca(""); setFiltroPrestador("Todos"); setDataInicio(""); setDataFim(""); }}
+            onClick={() => { setBuscaLote(""); setBuscaPrestador(""); setDataInicio(""); setDataFim(""); }}
           >
             <span className="material-symbols-outlined">mop</span>
             Limpar Filtros
